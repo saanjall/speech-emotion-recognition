@@ -203,13 +203,3 @@ In the live demo ~6 evenly spaced webcam frames captured *during* the recording 
 5. Download `saved_models/` and `results/` (e.g. `!zip -r out.zip saved_models results`) to use the
    live demo on your laptop (the microphone/webcam demo must run locally, not on Colab).
 
-## 9. Viva cheat-sheet
-
-* **Why log-mel?** Mel scale matches human pitch perception; log compresses loudness like our ears.
-* **Why attention?** Emotion is not spread evenly — a laugh or a raised voice lasts a few frames; attention
-  learns per-frame weights instead of plain averaging.
-* **Why class weights?** RAVDESS has no "strong" intensity for neutral, so neutral has 96 clips vs 192 for the others.
-* **Why macro-F1 as well as accuracy?** It weights every emotion equally, so a model cannot look good by
-  ignoring a small class.
-* **Why late fusion?** Audio and face models are trained on different datasets; combining output
-  probabilities needs no paired audio-visual data, and the weight keeps audio dominant.
