@@ -1,0 +1,166 @@
+{
+  "model": "ensemble_avg",
+  "test_accuracy": 0.8,
+  "macro_f1": 0.7921982898319186,
+  "n_test": 240,
+  "classification_report": {
+    "neutral": {
+      "precision": 0.6521739130434783,
+      "recall": 0.9375,
+      "f1-score": 0.7692307692307693,
+      "support": 16.0
+    },
+    "calm": {
+      "precision": 0.7317073170731707,
+      "recall": 0.9375,
+      "f1-score": 0.821917808219178,
+      "support": 32.0
+    },
+    "happy": {
+      "precision": 0.8260869565217391,
+      "recall": 0.59375,
+      "f1-score": 0.6909090909090909,
+      "support": 32.0
+    },
+    "sad": {
+      "precision": 0.7307692307692307,
+      "recall": 0.59375,
+      "f1-score": 0.6551724137931034,
+      "support": 32.0
+    },
+    "angry": {
+      "precision": 0.9032258064516129,
+      "recall": 0.875,
+      "f1-score": 0.8888888888888888,
+      "support": 32.0
+    },
+    "fearful": {
+      "precision": 0.9047619047619048,
+      "recall": 0.59375,
+      "f1-score": 0.7169811320754716,
+      "support": 32.0
+    },
+    "disgust": {
+      "precision": 0.967741935483871,
+      "recall": 0.9375,
+      "f1-score": 0.9523809523809523,
+      "support": 32.0
+    },
+    "surprised": {
+      "precision": 0.7272727272727273,
+      "recall": 1.0,
+      "f1-score": 0.8421052631578947,
+      "support": 32.0
+    },
+    "accuracy": 0.8,
+    "macro avg": {
+      "precision": 0.8054674739222168,
+      "recall": 0.80859375,
+      "f1-score": 0.7921982898319186,
+      "support": 240.0
+    },
+    "weighted avg": {
+      "precision": 0.8156870446474661,
+      "recall": 0.8,
+      "f1-score": 0.7937294578719952,
+      "support": 240.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      15,
+      1,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      2,
+      30,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      3,
+      3,
+      19,
+      0,
+      0,
+      0,
+      0,
+      7
+    ],
+    [
+      3,
+      7,
+      0,
+      19,
+      0,
+      2,
+      1,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      28,
+      0,
+      0,
+      4
+    ],
+    [
+      0,
+      0,
+      4,
+      7,
+      2,
+      19,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      30,
+      1
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      32
+    ]
+  ],
+  "class_names": [
+    "neutral",
+    "calm",
+    "happy",
+    "sad",
+    "angry",
+    "fearful",
+    "disgust",
+    "surprised"
+  ],
+  "best_val_accuracy": 0.7916666666666666,
+  "weights": {
+    "wav2vec2_extra": 0.5,
+    "wavlm_large_extra": 0.5
+  }
+}

@@ -1,0 +1,166 @@
+{
+  "model": "wavlm_large_extra",
+  "test_accuracy": 0.7666666666666667,
+  "macro_f1": 0.7568776089981446,
+  "n_test": 240,
+  "classification_report": {
+    "neutral": {
+      "precision": 0.6153846153846154,
+      "recall": 1.0,
+      "f1-score": 0.7619047619047619,
+      "support": 16.0
+    },
+    "calm": {
+      "precision": 0.7,
+      "recall": 0.875,
+      "f1-score": 0.7777777777777778,
+      "support": 32.0
+    },
+    "happy": {
+      "precision": 0.6521739130434783,
+      "recall": 0.46875,
+      "f1-score": 0.5454545454545454,
+      "support": 32.0
+    },
+    "sad": {
+      "precision": 0.75,
+      "recall": 0.65625,
+      "f1-score": 0.7,
+      "support": 32.0
+    },
+    "angry": {
+      "precision": 0.9032258064516129,
+      "recall": 0.875,
+      "f1-score": 0.8888888888888888,
+      "support": 32.0
+    },
+    "fearful": {
+      "precision": 0.8823529411764706,
+      "recall": 0.46875,
+      "f1-score": 0.6122448979591837,
+      "support": 32.0
+    },
+    "disgust": {
+      "precision": 0.96875,
+      "recall": 0.96875,
+      "f1-score": 0.96875,
+      "support": 32.0
+    },
+    "surprised": {
+      "precision": 0.6976744186046512,
+      "recall": 0.9375,
+      "f1-score": 0.8,
+      "support": 32.0
+    },
+    "accuracy": 0.7666666666666667,
+    "macro avg": {
+      "precision": 0.7711952118326035,
+      "recall": 0.78125,
+      "f1-score": 0.7568776089981446,
+      "support": 240.0
+    },
+    "weighted avg": {
+      "precision": 0.7815825849291361,
+      "recall": 0.7666666666666667,
+      "f1-score": 0.756542465471037,
+      "support": 240.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      16,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      4,
+      28,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    [
+      6,
+      1,
+      15,
+      0,
+      1,
+      1,
+      0,
+      8
+    ],
+    [
+      0,
+      10,
+      0,
+      21,
+      0,
+      0,
+      1,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      28,
+      0,
+      0,
+      4
+    ],
+    [
+      0,
+      1,
+      7,
+      7,
+      2,
+      15,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      31,
+      1
+    ],
+    [
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      30
+    ]
+  ],
+  "class_names": [
+    "neutral",
+    "calm",
+    "happy",
+    "sad",
+    "angry",
+    "fearful",
+    "disgust",
+    "surprised"
+  ],
+  "best_val_accuracy": 0.8166666666666667,
+  "epochs_trained": 10,
+  "params": 315717576,
+  "train_time_sec": 3037.3,
+  "train_samples": 4801
+}

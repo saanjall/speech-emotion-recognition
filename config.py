@@ -12,6 +12,8 @@ import os
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(ROOT_DIR, "data", "RAVDESS")          # Actor_01 .. Actor_24
 FER_DIR = os.path.join(ROOT_DIR, "data", "fer2013")           # train/<emotion>/, test/<emotion>/
+CREMA_DIR = os.path.join(ROOT_DIR, "data", "CREMA-D")          # AudioWAV/1001_DFA_ANG_XX.wav  (extra TRAIN data)
+TESS_DIR = os.path.join(ROOT_DIR, "data", "TESS")              # OAF_back_angry.wav            (extra TRAIN data)
 CACHE_DIR = os.path.join(ROOT_DIR, "cache")
 CACHE_PATH = os.path.join(CACHE_DIR, "features.npz")
 MODELS_DIR = os.path.join(ROOT_DIR, "saved_models")
@@ -77,12 +79,18 @@ N_JOBS = -1                      # joblib workers for feature extraction (-1 = a
 # --------------------------------------------------------------------------
 # wav2vec2 (optional, PyTorch)
 # --------------------------------------------------------------------------
-W2V_MODEL_NAME = "facebook/wav2vec2-base"
+# Runs so far:  "facebook/wav2vec2-base" -> "wav2vec2" (20 ep, batch 8, LR 5e-5)
+#               "microsoft/wavlm-large"  -> "wavlm_large" (20 ep, batch 4, LR 3e-5)
+#               "facebook/wav2vec2-base" + CREMA-D/TESS -> "wav2vec2_extra" (10 ep, batch 8, LR 5e-5)
+W2V_MODEL_NAME = "microsoft/wavlm-large"
+W2V_RUN_NAME = "wavlm_large_extra"  # saved_models/<name>/ and results/<name>.json
+W2V_EXTRA_CORPORA = ["CREMA-D"]   # added to the TRAINING set only (val/test stay RAVDESS); TESS dropped for speed (only 2 speakers)
+W2V_EXTRA_FRACTION = 0.5          # random share of the extra clips to use (1 = all); 0.5 of CREMA-D ~ 3.7k clips, all 91 speakers
 W2V_SR = 16000
-W2V_EPOCHS = 20
-W2V_BATCH = 8
-W2V_LR = 5e-5
-W2V_PATIENCE = 5
+W2V_EPOCHS = 10                  # ~10x more clips per epoch than RAVDESS alone (TESS only: ~3.6x -> use 15)
+W2V_BATCH = 4                    # wavlm-large needs 4 to fit in 8 GB
+W2V_LR = 3e-5
+W2V_PATIENCE = 4
 
 # --------------------------------------------------------------------------
 # Face emotion + fusion
@@ -105,4 +113,6 @@ FACE_TO_AUDIO = {
     "neutral": {"neutral": 0.5, "calm": 0.5},
 }
 
-AUDIO_MODELS = ["mlp", "cnn", "cnn_bilstm", "wav2vec2"]
+TORCH_AUDIO_MODELS = ["wav2vec2", "wavlm_large", "wav2vec2_tess", "wav2vec2_extra", "wavlm_large_extra",
+                      "wavlm_large_full", "wav2vec2_extra_s7"]   # trained by train_wav2vec2.py
+AUDIO_MODELS = ["mlp", "cnn", "cnn_bilstm"] + TORCH_AUDIO_MODELS

@@ -7,9 +7,8 @@ models.py - the three Keras models compared in this project.
                   -> sequence of frame vectors -> Bidirectional LSTM
                   -> attention pooling (learns WHICH frames matter)        (main model)
 """
-import tensorflow as tf
 import keras                      # Keras 3 (installed with TensorFlow >= 2.16)
-from keras import layers
+from keras import layers, ops     # keras.ops works on any backend (TensorFlow or PyTorch)
 
 import config
 
@@ -41,9 +40,9 @@ class AttentionPooling(layers.Layer):
         super().build(input_shape)
 
     def call(self, h):
-        score = tf.matmul(tf.tanh(tf.matmul(h, self.W) + self.b), self.v)   # (B, T, 1)
-        alpha = tf.nn.softmax(score, axis=1)                                 # (B, T, 1)
-        return tf.reduce_sum(alpha * h, axis=1)                              # (B, D)
+        score = ops.matmul(ops.tanh(ops.matmul(h, self.W) + self.b), self.v)   # (B, T, 1)
+        alpha = ops.softmax(score, axis=1)                                     # (B, T, 1)
+        return ops.sum(alpha * h, axis=1)                                      # (B, D)
 
     def get_config(self):
         cfg = super().get_config()

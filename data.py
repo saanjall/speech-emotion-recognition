@@ -294,6 +294,36 @@ class SpecNormalizer:
         return cls(d["mean"], d["std"])
 
 
+# ==========================================================================
+# 7. Extra TRAINING corpora: CREMA-D (91 actors) + TESS (2 speakers)
+#    More speakers -> better on unseen voices. They are ONLY added to the training
+#    set; validation/test stay RAVDESS actors 19-24, so results remain comparable.
+# ==========================================================================
+CREMA_CODES = {"NEU": "neutral", "HAP": "happy", "SAD": "sad", "ANG": "angry", "FEA": "fearful", "DIS": "disgust"}
+TESS_CODES = {"neutral": "neutral", "happy": "happy", "sad": "sad", "angry": "angry",
+              "fear": "fearful", "disgust": "disgust", "ps": "surprised"}      # ps = pleasant surprise
+
+
+def list_extra_files(corpora=("CREMA-D", "TESS"), crema_dir=config.CREMA_DIR, tess_dir=config.TESS_DIR):
+    """(path, label_idx, speaker_id) for CREMA-D (1001_DFA_ANG_XX.wav) and TESS (OAF_back_angry.wav).
+    Speaker ids: CREMA-D 1001-1091, TESS 2001 (OAF) / 2002 (YAF) - never clash with RAVDESS 1-24."""
+    items = []
+    for root, _, files in os.walk(crema_dir) if "CREMA-D" in corpora else []:
+        for name in files:
+            parts = os.path.splitext(name)[0].split("_")
+            path = os.path.join(root, name)
+            if name.lower().endswith(".wav") and len(parts) == 4 and parts[2] in CREMA_CODES \
+                    and os.path.getsize(path) > 1000:                       # a few CREMA-D files are empty
+                items.append((path, config.EMOTIONS.index(CREMA_CODES[parts[2]]), int(parts[0])))
+    for root, _, files in os.walk(tess_dir) if "TESS" in corpora else []:
+        for name in files:
+            parts = os.path.splitext(name)[0].split("_")
+            if name.lower().endswith(".wav") and len(parts) >= 3 and parts[-1].lower() in TESS_CODES:
+                items.append((os.path.join(root, name), config.EMOTIONS.index(TESS_CODES[parts[-1].lower()]),
+                              2001 if parts[0].upper() == "OAF" else 2002))
+    return sorted(items)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Build / inspect the cached feature file.")
     parser.add_argument("--rebuild", action="store_true", help="re-extract features even if the cache exists")

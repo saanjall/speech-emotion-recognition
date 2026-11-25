@@ -19,7 +19,11 @@ import numpy as np
 import config
 
 PRETTY = {"mlp": "MLP (handcrafted)", "cnn": "CNN (log-mel)",
-          "cnn_bilstm": "CNN+BiLSTM+Attn", "wav2vec2": "wav2vec2-base"}
+          "cnn_bilstm": "CNN+BiLSTM+Attn", "wav2vec2": "wav2vec2-base",
+          "wavlm_large": "WavLM-large", "wav2vec2_extra": "wav2vec2-base + CREMA-D/TESS",
+          "wav2vec2_tess": "wav2vec2-base + TESS", "wavlm_large_extra": "WavLM-large + 1/2 CREMA-D",
+          "wavlm_large_full": "WavLM-large + CREMA-D/TESS", "wav2vec2_extra_s7": "wav2vec2-base + CREMA-D/TESS (seed 7)",
+"ensemble": "Ensemble (weighted avg)", "ensemble_avg": "Ensemble (equal avg)"}
 
 
 def load_results(results_dir=config.RESULTS_DIR):
@@ -27,7 +31,7 @@ def load_results(results_dir=config.RESULTS_DIR):
     for path in sorted(glob.glob(os.path.join(results_dir, "*.json"))):
         with open(path) as f:
             r = json.load(f)
-        if r.get("model") in config.AUDIO_MODELS:          # skip face_cnn and other files
+        if r.get("model") in config.AUDIO_MODELS + ["ensemble", "ensemble_avg"]:   # skip face_cnn and other files
             rows.append(r)
     return sorted(rows, key=lambda r: r["test_accuracy"], reverse=True)
 
@@ -54,7 +58,7 @@ def plot(rows, path):
     ax.bar_label(b1, fmt="%.3f", fontsize=8)
     ax.bar_label(b2, fmt="%.3f", fontsize=8)
     ax.axhline(1 / config.NUM_CLASSES, color="grey", ls="--", lw=1, label="chance (12.5%)")
-    ax.set_xticks(x, names)
+    ax.set_xticks(x, names, rotation=25, ha="right")      # long names would overlap horizontally
     ax.set_ylim(0, 1)
     ax.set_title("RAVDESS speaker-independent test set (actors 21-24)")
     ax.legend()

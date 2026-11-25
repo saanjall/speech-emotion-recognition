@@ -18,6 +18,10 @@ import json
 import time
 import argparse
 
+# PyTorch backend: TensorFlow has no GPU support on native Windows, PyTorch does (~5-7x faster here).
+# Must be set before keras is imported. Override with: $env:KERAS_BACKEND="tensorflow"
+os.environ.setdefault("KERAS_BACKEND", "torch")
+
 import numpy as np
 import joblib
 from sklearn.preprocessing import StandardScaler

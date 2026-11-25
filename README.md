@@ -141,14 +141,25 @@ EarlyStopping on val accuracy (patience 15, best weights restored), ReduceLROnPl
 Augmentation (train only, 2 extra copies/clip, 1–2 random ops): Gaussian noise, pitch shift ±2 st,
 time stretch 0.85–1.15, time shift, plus SpecAugment (1 frequency + 1 time mask) on augmented spectrograms.
 
-## 6. Results (fill in after training — `python compare.py` prints this table)
+## 6. Results (`python compare.py` prints this table; test = RAVDESS actors 21–24)
 
 | Rank | Model | Test accuracy | Macro-F1 | Best val acc | Params |
 |---|---|---|---|---|---|
-| | MLP (handcrafted) | | | | |
-| | CNN (log-mel) | | | | |
-| | CNN + BiLSTM + Attention | | | | |
-| | wav2vec2-base | | | | |
+| 1 | **Ensemble (equal avg of #2 + #4)** | **0.800** | **0.792** | 0.792 | – |
+| 2 | wav2vec2-base + CREMA-D/TESS | 0.792 | 0.784 | 0.742 | 94.6 M |
+| 3 | wav2vec2-base + CREMA-D/TESS (seed 7) | 0.771 | 0.767 | 0.717 | 94.6 M |
+| 4 | WavLM-large + ½ CREMA-D | 0.767 | 0.757 | 0.817 | 315.7 M |
+| 5 | wav2vec2-base | 0.746 | 0.739 | 0.783 | 94.6 M |
+| 6 | Ensemble (weights tuned on val) | 0.742 | 0.727 | 0.850 | – |
+| 7 | WavLM-large + CREMA-D/TESS | 0.738 | 0.719 | 0.842 | 315.7 M |
+| 8 | WavLM-large | 0.725 | 0.707 | 0.758 | 315.7 M |
+| 9 | CNN + BiLSTM + Attention | 0.596 | 0.572 | 0.633 | 1.3 M |
+| 10 | MLP (handcrafted) | 0.500 | 0.489 | 0.525 | 0.28 M |
+| 11 | CNN (log-mel) | 0.454 | 0.445 | 0.608 | 1.2 M |
+
+Per emotion (best model, test recall): surprised 100 %, neutral / calm / disgust 94 %, angry 88 %;
+**happy, sad and fearful 59 %** (confused with surprised, calm and sad respectively).
+Details and what was tried: `PROJECT_SUMMARY.md`.
 
 Chance level = 12.5 % (8 classes). Confusion matrices: `results/<model>_confusion.png`;
 learning curves: `results/<model>_curves.png`; chart: `results/comparison.png`.

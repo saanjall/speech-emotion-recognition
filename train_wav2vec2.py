@@ -21,16 +21,20 @@ import argparse
 import numpy as np
 import torch
 from torch.utils.data import Dataset, DataLoader
-from transformers import (Wav2Vec2FeatureExtractor, Wav2Vec2ForSequenceClassification,
-                          get_linear_schedule_with_warmup)
+# Auto* classes load the right architecture for any checkpoint (wav2vec2, WavLM, HuBERT ...)
+from transformers import AutoFeatureExtractor, AutoModelForAudioClassification, get_linear_schedule_with_warmup
 from sklearn.utils.class_weight import compute_class_weight
 import librosa
+from joblib import Parallel, delayed
+from tqdm import tqdm
 
 import config
 import data
 from metrics_utils import save_results
 
-OUT_DIR = os.path.join(config.MODELS_DIR, "wav2vec2")
+
+def load_wave(path):
+    return data.prepare_waveform(librosa.load(path, sr=config.W2V_SR, mono=True)[0], sr=config.W2V_SR)
 
 
 class RavdessWaveDataset(Dataset):
@@ -41,8 +45,7 @@ class RavdessWaveDataset(Dataset):
         self.rng = np.random.default_rng(seed)
         self.labels = np.array([lab for _, lab, _ in items], dtype=np.int64)
         print(f"  loading {len(items)} clips ({'train' if train else 'eval'}) ...")
-        self.waves = [data.prepare_waveform(librosa.load(p, sr=config.W2V_SR, mono=True)[0], sr=config.W2V_SR)
-                      for p, _, _ in items]
+        self.waves = Parallel(n_jobs=config.N_JOBS)(delayed(load_wave)(p) for p, _, _ in items)
 
     def __len__(self):
         return len(self.waves)
@@ -86,23 +89,41 @@ def main():
     parser.add_argument("--batch", type=int, default=config.W2V_BATCH)
     parser.add_argument("--lr", type=float, default=config.W2V_LR)
     parser.add_argument("--patience", type=int, default=config.W2V_PATIENCE)
+    # these override config.py for one run, so several runs can be queued without editing it
+    parser.add_argument("--model", default=config.W2V_MODEL_NAME)
+    parser.add_argument("--run", default=config.W2V_RUN_NAME, help="saved_models/<run>/ and results/<run>.json")
+    parser.add_argument("--corpora", nargs="*", default=config.W2V_EXTRA_CORPORA)
+    parser.add_argument("--fraction", type=float, default=config.W2V_EXTRA_FRACTION)
+    parser.add_argument("--seed", type=int, default=config.SEED)
     args = parser.parse_args()
+    config.W2V_MODEL_NAME, config.W2V_RUN_NAME, config.SEED = args.model, args.run, args.seed
+    config.W2V_EXTRA_CORPORA, config.W2V_EXTRA_FRACTION = args.corpora, args.fraction
+    OUT_DIR = os.path.join(config.MODELS_DIR, config.W2V_RUN_NAME)
 
     torch.manual_seed(config.SEED)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"device: {device}")
 
     splits = data.split_by_actor(data.list_ravdess_files())
-    feature_extractor = Wav2Vec2FeatureExtractor.from_pretrained(config.W2V_MODEL_NAME)
+    train_items = splits["train"]
+    if config.W2V_EXTRA_CORPORA:                 # extra corpora go into TRAIN only; val/test stay RAVDESS
+        extra = data.list_extra_files(config.W2V_EXTRA_CORPORA)
+        if config.W2V_EXTRA_FRACTION < 1:          # random subset for speed; keeps (almost) every speaker
+            rng = np.random.default_rng(config.SEED)
+            keep = rng.choice(len(extra), int(len(extra) * config.W2V_EXTRA_FRACTION), replace=False)
+            extra = [extra[i] for i in sorted(keep)]
+        print(f"extra training clips: {len(extra)} ({' + '.join(config.W2V_EXTRA_CORPORA)}) + {len(train_items)} RAVDESS")
+        train_items = train_items + extra
+    feature_extractor = AutoFeatureExtractor.from_pretrained(config.W2V_MODEL_NAME)
     collate = make_collate(feature_extractor)
-    train_ds = RavdessWaveDataset(splits["train"], train=True)
+    train_ds = RavdessWaveDataset(train_items, train=True, seed=config.SEED)
     val_ds = RavdessWaveDataset(splits["val"])
     test_ds = RavdessWaveDataset(splits["test"])
     train_dl = DataLoader(train_ds, batch_size=args.batch, shuffle=True, collate_fn=collate)
     val_dl = DataLoader(val_ds, batch_size=args.batch, collate_fn=collate)
     test_dl = DataLoader(test_ds, batch_size=args.batch, collate_fn=collate)
 
-    model = Wav2Vec2ForSequenceClassification.from_pretrained(
+    model = AutoModelForAudioClassification.from_pretrained(
         config.W2V_MODEL_NAME, num_labels=config.NUM_CLASSES,
         label2id={n: i for i, n in enumerate(config.EMOTIONS)},
         id2label={i: n for i, n in enumerate(config.EMOTIONS)})
@@ -123,7 +144,7 @@ def main():
     for epoch in range(1, args.epochs + 1):
         model.train()
         run_loss, correct, seen = 0.0, 0, 0
-        for x, y in train_dl:
+        for x, y in tqdm(train_dl, desc=f"epoch {epoch:02d}", leave=False):
             x, y = x.to(device), y.to(device)
             optimizer.zero_grad(set_to_none=True)
             with torch.autocast(device_type=device.type, enabled=device.type == "cuda"):
@@ -159,13 +180,13 @@ def main():
                 break
 
     with open(os.path.join(OUT_DIR, "meta.json"), "w") as f:
-        json.dump({"model": "wav2vec2", "framework": "torch", "sr": config.W2V_SR,
+        json.dump({"model": config.W2V_RUN_NAME, "base": config.W2V_MODEL_NAME, "framework": "torch", "sr": config.W2V_SR,
                    "duration": config.DURATION, "class_names": config.EMOTIONS}, f, indent=2)
 
     # Reload the best checkpoint and evaluate ONCE on the test actors.
-    model = Wav2Vec2ForSequenceClassification.from_pretrained(OUT_DIR).to(device)
+    model = AutoModelForAudioClassification.from_pretrained(OUT_DIR).to(device)
     _, _, preds, trues = evaluate(model, test_dl, device, loss_fn)
-    save_results("wav2vec2", trues, preds, history=history,
+    save_results(config.W2V_RUN_NAME, trues, preds, history=history,
                  extra={"params": int(sum(p.numel() for p in model.parameters())),
                         "train_time_sec": round(time.time() - start, 1),
                         "train_samples": len(train_ds)})
