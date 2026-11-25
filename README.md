@@ -159,6 +159,10 @@ time stretch 0.85–1.15, time shift, plus SpecAugment (1 frequency + 1 time mas
 
 Per emotion (best model, test recall): surprised 100 %, neutral / calm / disgust 94 %, angry 88 %;
 **happy, sad and fearful 59 %** (confused with surprised, calm and sad respectively).
+
+Other evaluations with 6 emotions (CREMA-D's set: neutral, happy, sad, angry, fearful, disgust):
+wav2vec2-base trained on 6 emotions → **86.4 %** on the same RAVDESS test actors (176 clips);
+wav2vec2-base trained and tested on CREMA-D alone (18 unseen actors, 1,464 clips) → **70.0 %**.
 Details and what was tried: `PROJECT_SUMMARY.md`.
 
 Chance level = 12.5 % (8 classes). Confusion matrices: `results/<model>_confusion.png`;

@@ -23,6 +23,16 @@ models never heard). Chance level = 12.5 %.
 
 An equal average of all four CREMA-D models (#2, #3, #4, #7) gave 79.2 % — no better than the 2-model average.
 
+### Other evaluations (6 emotions = CREMA-D's set: neutral, happy, sad, angry, fearful, disgust)
+
+| Model | Test set | Test accuracy | Macro-F1 | Test clips |
+|---|---|---|---|---|
+| **wav2vec2-base, trained on 6 emotions** (RAVDESS + CREMA-D + TESS) | RAVDESS actors 21–24 | **86.4 %** | **0.860** | 176 |
+| wav2vec2-base, CREMA-D only | 18 unseen CREMA-D actors | 70.0 % | 0.701 | 1,464 |
+
+These are easier / different tasks than the 8-emotion benchmark above and are reported **alongside** it,
+not instead of it. See step 9.
+
 Chart: `results/comparison.png` · table: `results/comparison.md` · per model: `results/<model>_confusion.png`,
 `results/<model>_curves.png`, `results/<model>.json`.
 
@@ -104,6 +114,23 @@ Attempt to reach 85 %:
 Finding: across these runs, higher validation accuracy went with *lower* test accuracy — two
 validation actors cannot tell which change genuinely helps, so results plateau around 79–80 %.
 
+### 9. Six emotions and a CREMA-D test set
+CREMA-D (most of the training data) has no calm or surprised, and those two classes caused many of
+the 8-emotion errors (happy → surprised, sad → calm). So the emotion set shared by both datasets was
+used: neutral, happy, sad, angry, fearful, disgust (`train_wav2vec2.py --six-emotions`).
+- **RAVDESS test, 6 emotions:** train RAVDESS 1–18 + CREMA-D + TESS without calm/surprised clips
+  (10,634 clips), val RAVDESS 19–20 (88), test RAVDESS 21–24 (176). Same settings as the 79.2 % model.
+  → **86.4 %, macro-F1 0.860.** Recall: neutral 100 %, disgust 100 %, angry 97 %, happy 84 %,
+  fearful 75 %, sad 69 % (sad → disgust is the main error). For comparison, the 8-emotion model
+  scored 79.0 % on the same 176 clips when its predictions were restricted to these 6 emotions.
+- **CREMA-D test** (`--crema-only`): CREMA-D alone, split by actor with a fixed seed — 64 train /
+  9 val / 18 test actors (5,240 / 738 / 1,464 clips). → **70.0 %, macro-F1 0.701.** CREMA-D is harder
+  (subtler acting, 12 sentences; human audio-only agreement with the intended emotion ≈ 41 %), but
+  the test is 8× larger, so the number is more reliable (≈ ±2.3 points vs ≈ ±5.5 for RAVDESS).
+  Recall: angry 86 %, happy 81 %, neutral 77 %, disgust 61 %, fearful 59 %, sad 57 %.
+
+Sad and fearful are the weakest emotions on both datasets, so this is a genuine model limitation.
+
 ## Why the evaluation is trustworthy
 - **Speaker-independent split** — no test actor's voice is ever used for training or model selection.
 - **Augmentation, normalisation statistics and class weights use training data only.**
@@ -125,7 +152,7 @@ validation actors cannot tell which change genuinely helps, so results plateau a
 |---|---|
 | `models.py` | attention layer uses `keras.ops` (works on TensorFlow and PyTorch backends) |
 | `train.py` | Keras trains on the PyTorch backend → GPU on Windows |
-| `train_wav2vec2.py` | any HF audio model (wav2vec2 / WavLM), extra training corpora, parallel audio loading; progress bar; `--model --run --corpora --fraction --seed` override config per run |
+| `train_wav2vec2.py` | any HF audio model (wav2vec2 / WavLM), extra training corpora, parallel audio loading; progress bar; `--model --run --corpora --fraction --seed` override config per run; `--six-emotions`, `--crema-only` |
 | `config.py` | WavLM / extra-data settings (`W2V_EXTRA_FRACTION`), run names, new model names |
 | `data.py` | `list_extra_files()` — CREMA-D + TESS loaders with label mapping |
 | `audio_predictor.py` | loads any HF audio model; fixes GPU-tensor → NumPy on the PyTorch backend |
@@ -141,6 +168,8 @@ python train_wav2vec2.py       # model/data chosen in config.py (W2V_MODEL_NAME,
 python train_wav2vec2.py --model facebook/wav2vec2-base --run wav2vec2_extra --corpora CREMA-D TESS --fraction 1 --batch 8 --lr 5e-5
 python train_wav2vec2.py --model microsoft/wavlm-large --run wavlm_large_extra --corpora CREMA-D --fraction 0.5 --batch 4 --lr 3e-5
 python ensemble.py --equal wav2vec2_extra wavlm_large_extra   # best result (80.0 %)
+python train_wav2vec2.py --six-emotions --model facebook/wav2vec2-base --run wav2vec2_6class --corpora CREMA-D TESS --fraction 1 --batch 8 --lr 5e-5   # 86.4 %, 6 emotions
+python train_wav2vec2.py --crema-only --model facebook/wav2vec2-base --run wav2vec2_crema_only --batch 8 --lr 5e-5   # 70.0 %, CREMA-D test
 python ensemble.py             # optional: validation-weighted ensemble
 python compare.py              # table + chart
 ```

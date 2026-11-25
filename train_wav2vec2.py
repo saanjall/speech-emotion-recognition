@@ -95,6 +95,10 @@ def main():
     parser.add_argument("--corpora", nargs="*", default=config.W2V_EXTRA_CORPORA)
     parser.add_argument("--fraction", type=float, default=config.W2V_EXTRA_FRACTION)
     parser.add_argument("--seed", type=int, default=config.SEED)
+    parser.add_argument("--crema-only", action="store_true",
+                        help="train/val/test on CREMA-D alone: 6 emotions, split by actor (64/9/18)")
+    parser.add_argument("--six-emotions", action="store_true",
+                        help="drop calm/surprised everywhere (CREMA-D's 6 emotions); val/test stay RAVDESS")
     args = parser.parse_args()
     config.W2V_MODEL_NAME, config.W2V_RUN_NAME, config.SEED = args.model, args.run, args.seed
     config.W2V_EXTRA_CORPORA, config.W2V_EXTRA_FRACTION = args.corpora, args.fraction
@@ -104,10 +108,31 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"device: {device}")
 
-    splits = data.split_by_actor(data.list_ravdess_files())
+    class_names, keep6 = config.EMOTIONS, None
+    if args.crema_only or args.six_emotions:
+        # CREMA-D's emotion set: drop calm/surprised clips, renumber the other labels 0..5
+        class_names = [e for e in config.EMOTIONS if e in data.CREMA_CODES.values()]
+        remap = {config.EMOTIONS.index(e): i for i, e in enumerate(class_names)}
+        keep6 = lambda its: [(p, remap[lab], a) for p, lab, a in its if lab in remap]
+    if args.crema_only:
+        # actors (ids 1001-1091) split once with a fixed seed
+        items = keep6(data.list_extra_files(["CREMA-D"]))
+        actors = np.random.default_rng(config.SEED).permutation(sorted({a for _, _, a in items}))
+        val_a, test_a = set(actors[:9].tolist()), set(actors[9:27].tolist())
+        splits = {"train": [it for it in items if it[2] not in val_a | test_a],
+                  "val": [it for it in items if it[2] in val_a],
+                  "test": [it for it in items if it[2] in test_a]}
+        print("CREMA-D only | " + " | ".join(f"{k}: {len(v)} clips, {len({a for _, _, a in v})} actors"
+                                             for k, v in splits.items()))
+    else:
+        splits = data.split_by_actor(data.list_ravdess_files())
+        if keep6:
+            splits = {k: keep6(v) for k, v in splits.items()}
     train_items = splits["train"]
-    if config.W2V_EXTRA_CORPORA:                 # extra corpora go into TRAIN only; val/test stay RAVDESS
+    if config.W2V_EXTRA_CORPORA and not args.crema_only:   # extra corpora go into TRAIN only; val/test stay RAVDESS
         extra = data.list_extra_files(config.W2V_EXTRA_CORPORA)
+        if keep6:
+            extra = keep6(extra)
         if config.W2V_EXTRA_FRACTION < 1:          # random subset for speed; keeps (almost) every speaker
             rng = np.random.default_rng(config.SEED)
             keep = rng.choice(len(extra), int(len(extra) * config.W2V_EXTRA_FRACTION), replace=False)
@@ -124,13 +149,13 @@ def main():
     test_dl = DataLoader(test_ds, batch_size=args.batch, collate_fn=collate)
 
     model = AutoModelForAudioClassification.from_pretrained(
-        config.W2V_MODEL_NAME, num_labels=config.NUM_CLASSES,
-        label2id={n: i for i, n in enumerate(config.EMOTIONS)},
-        id2label={i: n for i, n in enumerate(config.EMOTIONS)})
+        config.W2V_MODEL_NAME, num_labels=len(class_names),
+        label2id={n: i for i, n in enumerate(class_names)},
+        id2label={i: n for i, n in enumerate(class_names)})
     model.freeze_feature_encoder()            # keep the convolutional waveform encoder fixed
     model.to(device)
 
-    weights = compute_class_weight("balanced", classes=np.arange(config.NUM_CLASSES), y=train_ds.labels)
+    weights = compute_class_weight("balanced", classes=np.arange(len(class_names)), y=train_ds.labels)
     loss_fn = torch.nn.CrossEntropyLoss(weight=torch.tensor(weights, dtype=torch.float32, device=device))
     optimizer = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr=args.lr, weight_decay=0.01)
     total_steps = args.epochs * len(train_dl)
@@ -181,12 +206,12 @@ def main():
 
     with open(os.path.join(OUT_DIR, "meta.json"), "w") as f:
         json.dump({"model": config.W2V_RUN_NAME, "base": config.W2V_MODEL_NAME, "framework": "torch", "sr": config.W2V_SR,
-                   "duration": config.DURATION, "class_names": config.EMOTIONS}, f, indent=2)
+                   "duration": config.DURATION, "class_names": class_names}, f, indent=2)
 
     # Reload the best checkpoint and evaluate ONCE on the test actors.
     model = AutoModelForAudioClassification.from_pretrained(OUT_DIR).to(device)
     _, _, preds, trues = evaluate(model, test_dl, device, loss_fn)
-    save_results(config.W2V_RUN_NAME, trues, preds, history=history,
+    save_results(config.W2V_RUN_NAME, trues, preds, history=history, class_names=class_names,
                  extra={"params": int(sum(p.numel() for p in model.parameters())),
                         "train_time_sec": round(time.time() - start, 1),
                         "train_samples": len(train_ds)})

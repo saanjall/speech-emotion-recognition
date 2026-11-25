@@ -1,0 +1,120 @@
+{
+  "model": "wav2vec2_crema_only",
+  "test_accuracy": 0.700136612021858,
+  "macro_f1": 0.7010092321678273,
+  "n_test": 1464,
+  "classification_report": {
+    "neutral": {
+      "precision": 0.8367346938775511,
+      "recall": 0.7663551401869159,
+      "f1-score": 0.8,
+      "support": 214.0
+    },
+    "happy": {
+      "precision": 0.6558441558441559,
+      "recall": 0.808,
+      "f1-score": 0.7240143369175627,
+      "support": 250.0
+    },
+    "sad": {
+      "precision": 0.5652173913043478,
+      "recall": 0.572,
+      "f1-score": 0.5685884691848907,
+      "support": 250.0
+    },
+    "angry": {
+      "precision": 0.7933579335793358,
+      "recall": 0.86,
+      "f1-score": 0.8253358925143954,
+      "support": 250.0
+    },
+    "fearful": {
+      "precision": 0.6379310344827587,
+      "recall": 0.592,
+      "f1-score": 0.6141078838174274,
+      "support": 250.0
+    },
+    "disgust": {
+      "precision": 0.75,
+      "recall": 0.612,
+      "f1-score": 0.6740088105726872,
+      "support": 250.0
+    },
+    "accuracy": 0.700136612021858,
+    "macro avg": {
+      "precision": 0.7065142015146916,
+      "recall": 0.7017258566978194,
+      "f1-score": 0.7010092321678273,
+      "support": 1464.0
+    },
+    "weighted avg": {
+      "precision": 0.7033120582598671,
+      "recall": 0.700136612021858,
+      "f1-score": 0.6985750329588395,
+      "support": 1464.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      164,
+      17,
+      25,
+      1,
+      6,
+      1
+    ],
+    [
+      5,
+      202,
+      1,
+      14,
+      23,
+      5
+    ],
+    [
+      16,
+      20,
+      143,
+      6,
+      35,
+      30
+    ],
+    [
+      2,
+      17,
+      0,
+      215,
+      10,
+      6
+    ],
+    [
+      6,
+      29,
+      49,
+      9,
+      148,
+      9
+    ],
+    [
+      3,
+      23,
+      35,
+      26,
+      10,
+      153
+    ]
+  ],
+  "class_names": [
+    "neutral",
+    "happy",
+    "sad",
+    "angry",
+    "fearful",
+    "disgust"
+  ],
+  "best_val_accuracy": 0.7601626016260162,
+  "epochs_trained": 10,
+  "params": 94570118,
+  "train_time_sec": 925.1,
+  "train_samples": 5240
+}
