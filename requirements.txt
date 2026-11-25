@@ -9,3 +9,4 @@ joblib
 matplotlib
 opencv-python>=4.8,<5        # OpenCV 5 removed the Haar CascadeClassifier
 sounddevice
+flask>=3.0                   # webapp/server.py (Feelspace web app)

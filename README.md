@@ -38,6 +38,7 @@ weighted late fusion, but audio always carries at least 50 % of the decision.
 | `live_demo.py` | microphone (+ webcam) real-time demo |
 | `predict.py` | predict from an audio file (+ optional face image) |
 | `smoke_test.py` | checks everything builds/works on random dummy data (no dataset needed) |
+| `webapp/` | **Feelspace** — calm web app for student wellbeing: record your voice, see its tone, get suggestions (`webapp/server.py` + `webapp/static/`) |
 
 ## 1. Setup
 
@@ -180,7 +181,33 @@ surprise→surprised, neutral→50 % neutral + 50 % calm. Fusion:
 `fused = w_audio·audio + (1−w_audio)·face`, default `w_audio = 0.7`, and `w_audio < 0.5` is rejected.
 In the live demo ~6 evenly spaced webcam frames captured *during* the recording are averaged.
 
-## 8. Running on Google Colab (GPU)
+## 8. Feelspace web app (student wellbeing front-end)
+
+A calm, browser-based front-end for the trained models, aimed at student mental health:
+
+* **Voice check-in** — record 5–15 s (or upload a file); the server splits speech into 3 s windows,
+  runs the model on each and averages them. Shows the tone, confidence, all emotion probabilities,
+  how the tone changed over time, and simple voice measurements (pitch, expressiveness, pace, pauses).
+* **Suggestions** — three practical, student-focused ideas matched to the detected tone, linked to the
+  tools below. Optional "how do you think you feel?" self-rating is compared with the voice result.
+* **Breathe** — guided box, 4-7-8 and coherent breathing with an animated orb.
+* **Journal & insights** — saved check-ins (stored only in the browser), weekly stats, streak,
+  wellbeing trend chart, CSV export; a gentle prompt to seek support after several low check-ins.
+* **Support** — helplines (Tele-MANAS 14416, iCall, 112), interactive 5-4-3-2-1 grounding, study tips.
+* **About** — how it works, model picker, evaluation results, and a clear "not a medical tool" notice.
+
+Audio is analysed on the local server in memory and never saved.
+
+```bash
+pip install flask            # plus torch + transformers for the wav2vec2 / WavLM models
+```
+```bash
+python webapp/server.py      # then open http://localhost:5000
+```
+It automatically finds every trained model in `saved_models/` and uses the best one available
+(`wav2vec2_6class` → `wav2vec2_extra` → … → `mlp`); you can switch models on the About page.
+
+## 9. Running on Google Colab (GPU)
 
 1. Runtime → Change runtime type → **GPU**.
 2. Upload this project folder as a zip (or push it to GitHub and `git clone` it), then in a cell:
@@ -203,7 +230,7 @@ In the live demo ~6 evenly spaced webcam frames captured *during* the recording 
 5. Download `saved_models/` and `results/` (e.g. `!zip -r out.zip saved_models results`) to use the
    live demo on your laptop (the microphone/webcam demo must run locally, not on Colab).
 
-## 9. Viva cheat-sheet
+## 10. Viva cheat-sheet
 
 * **Why log-mel?** Mel scale matches human pitch perception; log compresses loudness like our ears.
 * **Why attention?** Emotion is not spread evenly — a laugh or a raised voice lasts a few frames; attention
